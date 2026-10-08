@@ -1,7 +1,8 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { Box3, InstancedMesh, Mesh } from 'three';
+import { Box3, InstancedMesh, Mesh, MeshPhysicalMaterial, PerspectiveCamera, Vector3 } from 'three';
 import { createTree, type ArtTree } from '../app/src/tree';
 import { LEAVES } from '../app/src/config';
+import { cameraAt, FPS } from '../app/src/timeline';
 
 describe('完整艺术树', () => {
   let tree: ArtTree;
@@ -44,6 +45,38 @@ describe('完整艺术树', () => {
   });
   it('每片叶子的背面都有实体叶脉', () => {
     tree.leaves.forEach(leaf => expect(leaf.getObjectByName('背面叶脉')).toBeDefined());
+  });
+  it('叶片和纤维具备独立织纹与克制的布料光泽', () => {
+    const leaf = tree.leaves[0].getObjectByName('叶片实体') as Mesh;
+    const fiber = tree.group.getObjectByName('彩色纤维 1') as Mesh;
+    const leafMaterial = leaf.material as MeshPhysicalMaterial, fiberMaterial = fiber.material as MeshPhysicalMaterial;
+    expect(leafMaterial).toBeInstanceOf(MeshPhysicalMaterial);
+    expect(fiberMaterial).toBeInstanceOf(MeshPhysicalMaterial);
+    expect(leafMaterial.sheen).toBeGreaterThan(0);
+    expect(leafMaterial.sheen).toBeLessThan(0.5);
+    expect(leafMaterial.map).toBeDefined();
+    expect(leafMaterial.roughnessMap).toBeDefined();
+    expect(leafMaterial.bumpMap).not.toBe(fiberMaterial.bumpMap);
+  });
+  it('艺术馆版成树阶段每一帧都保留完整叶面和底座', () => {
+    const camera = new PerspectiveCamera(72, 9 / 16, 0.1, 100), point = new Vector3();
+    const meshes = tree.leaves.map(leaf => leaf.getObjectByName('叶片实体') as Mesh);
+    meshes.push(tree.group.getObjectByName('叠层年轮 1') as Mesh);
+    let maxX = 0, maxY = 0;
+    for (let frame = 240; frame < 360; frame++) {
+      const time = frame / FPS, pose = cameraAt(time, 'portrait');
+      tree.update(time, 'film'); tree.group.updateMatrixWorld(true);
+      camera.position.set(...pose.position); camera.lookAt(new Vector3(...pose.target)); camera.updateMatrixWorld();
+      for (const mesh of meshes) {
+        const positions = mesh.geometry.getAttribute('position');
+        for (let i = 0; i < positions.count; i++) {
+          point.fromBufferAttribute(positions, i).applyMatrix4(mesh.matrixWorld).project(camera);
+          maxX = Math.max(maxX, Math.abs(point.x)); maxY = Math.max(maxY, Math.abs(point.y));
+        }
+      }
+    }
+    expect(maxX).toBeLessThan(0.99); expect(maxY).toBeLessThan(0.95);
+    tree.update(0, 'study');
   });
   it('树干和底座具备实际多色色层', () => {
     const trunk = tree.group.getObjectByName('连续树干') as Mesh;

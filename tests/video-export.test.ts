@@ -7,6 +7,8 @@ describe('本地视频导出边界', () => {
   it('前后端共享 15 秒／360 帧竖屏规格', () => {
     expect(film.duration).toBe(DURATION); expect(film.fps).toBe(FPS);
     expect(film.duration * film.fps).toBe(360); expect(film.width / film.height).toBe(9 / 16);
+    expect(film.portraitFraming).toBe('complete');
+    expect(film.filename).toBe('woven-life-mobile-gallery-15s-1080x1920.mp4');
   });
   it('只接受正确序号，拒绝丢帧、重复和非法索引', () => {
     expect(validateFrameIndex('12', 12, 360)).toBe(12);

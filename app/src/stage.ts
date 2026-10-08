@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createTree } from './tree';
 import { VIEWS, type ViewName } from './config';
+import { createGallery, GALLERY } from './gallery';
 import { cameraAt, DURATION, FPS, normalizeTime, phaseAt, type StudioMode, type FilmFormat } from './timeline';
 
 export class TreeStage {
@@ -29,32 +30,13 @@ export class TreeStage {
     this.renderer.setPixelRatio(this.pixelRatio);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.0;
+    this.renderer.toneMappingExposure = GALLERY.exposure;
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFShadowMap;
-    this.scene.background = new THREE.Color('#e7e1d5');
-    this.scene.fog = new THREE.Fog('#e7e1d5', 32, 70);
+    this.renderer.shadowMap.type = GALLERY.shadowType;
+    this.scene.background = new THREE.Color(GALLERY.background);
+    this.scene.fog = new THREE.Fog(GALLERY.background, 58, 140);
     this.scene.add(this.tree.group);
-
-    const hemisphere = new THREE.HemisphereLight('#fff4e2', '#c8bbaa', 2.0);
-    this.scene.add(hemisphere);
-    const key = new THREE.DirectionalLight('#fff0d3', 3.2);
-    key.position.set(-3, 22, 4); key.target.position.set(0, 4, 0);
-    key.castShadow = true; key.shadow.mapSize.set(2048, 2048);
-    Object.assign(key.shadow.camera, { left: -13, right: 13, top: 13, bottom: -13, near: 1, far: 50 });
-    key.shadow.bias = -0.00015; key.shadow.normalBias = 0.035;
-    key.shadow.radius = 14; key.shadow.intensity = 0.7;
-    this.scene.add(key, key.target);
-    const fill = new THREE.DirectionalLight('#dfe9e3', 1.1);
-    fill.position.set(7, 7, -5); this.scene.add(fill);
-    const frontFill = new THREE.DirectionalLight('#fff7ee', 0.5);
-    frontFill.position.set(2, 4, 12); this.scene.add(frontFill);
-    const rearFill = new THREE.DirectionalLight('#f3e1e7', 0.65);
-    rearFill.position.set(-9, 7, -11); this.scene.add(rearFill);
-
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(180, 180), new THREE.MeshStandardMaterial({ color: '#e4ddd0', roughness: 1 }));
-    ground.rotation.x = -Math.PI / 2; ground.position.y = -0.012; ground.receiveShadow = true;
-    this.scene.add(ground);
+    this.scene.add(createGallery());
 
     this.controls = new OrbitControls(this.camera, canvas);
     this.controls.enableDamping = true;
@@ -216,6 +198,7 @@ export class TreeStage {
     document.removeEventListener('visibilitychange', this.resetClock);
     const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>(), textures = new Set<THREE.Texture>();
     this.scene.traverse(object => {
+      if (object instanceof THREE.DirectionalLight || object instanceof THREE.SpotLight || object instanceof THREE.PointLight) object.shadow.dispose();
       if (object instanceof THREE.Mesh) {
         geometries.add(object.geometry);
         (Array.isArray(object.material) ? object.material : [object.material]).forEach(m => materials.add(m));

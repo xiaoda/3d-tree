@@ -5,6 +5,7 @@ import film from '../film.json';
 export const DURATION = film.duration;
 export const FPS = film.fps;
 export type FilmFormat = 'landscape' | 'portrait';
+export type PortraitFraming = 'complete' | 'close';
 export type StudioMode = 'study' | 'film';
 export const PHASES = [
   { id: 'roots', start: 0, end: 4, label: '起笔 · 纤维生根' },
@@ -58,7 +59,7 @@ const SHOTS: (CameraPose & { time: number })[] = [
 
 // 竖屏以主体体量为先：允许两侧冠缘出画，不为收全宽冠而退远。
 // 开场保持不变；枝叶展开后固定 48° 视场角，低一些的机位保留树干层次。
-const PORTRAIT_SHOTS: (CameraPose & { time: number })[] = [
+const PORTRAIT_CLOSE_SHOTS: (CameraPose & { time: number })[] = [
   { time: 0, position: [3.6, 2.2, 6.4], target: [0, 0.95, 0], fov: 48 },
   { time: 4, position: [4.2, 4.8, 10.5], target: [0, 2.7, 0], fov: 48 },
   { time: 10, position: [8.4, 7.6, 14.5], target: [0, 4.8, 0], fov: 48 },
@@ -66,10 +67,19 @@ const PORTRAIT_SHOTS: (CameraPose & { time: number })[] = [
   { time: 14.4, position: [6.4, 7.2, 15.3], target: [0, 4.8, 0], fov: 48 },
 ];
 
+// 暖光艺术馆按用户指定以第一版为基础：精确恢复原完整树冠镜头。
+const PORTRAIT_COMPLETE_SHOTS: (CameraPose & { time: number })[] = [
+  { time: 0, position: [3.6, 2.2, 6.4], target: [0, 0.95, 0], fov: 48 },
+  { time: 4, position: [4.2, 4.8, 10.5], target: [0, 2.7, 0], fov: 48 },
+  { time: 10, position: [13, 11.2, 22.5], target: [0, 5.2, 0], fov: 72 },
+  { time: 13, position: [8.8, 10.6, 23.8], target: [0, 5.2, 0], fov: 72 },
+  { time: 14.4, position: [10.7, 10.5, 25.3], target: [0, 5.2, 0], fov: 72 },
+];
+
 /** 五次缓动在镜头边界速度、加速度均归零，末尾只保留 0.6 秒镜头停留。 */
-export function cameraAt(time: number, format: FilmFormat = 'landscape'): CameraPose {
+export function cameraAt(time: number, format: FilmFormat = 'landscape', framing: PortraitFraming = film.portraitFraming as PortraitFraming): CameraPose {
   const t = normalizeTime(time);
-  const shots = format === 'portrait' ? PORTRAIT_SHOTS : SHOTS;
+  const shots = format === 'portrait' ? (framing === 'close' ? PORTRAIT_CLOSE_SHOTS : PORTRAIT_COMPLETE_SHOTS) : SHOTS;
   const last = shots[shots.length - 1];
   if (t >= last.time) return { position: [...last.position], target: [...last.target], fov: last.fov };
   const next = shots.findIndex(shot => shot.time > t), a = shots[next - 1], b = shots[next];

@@ -5,6 +5,7 @@ import { breathingPose, leafSurface, leafWidth, seededRandom } from './procedura
 import { createSurface, surfaceGeometry, surfacePoint, tubeFromPoints, leafGeometry, type TubeSurface } from './geometry';
 import { animateDiscs, attachBirthTimes, createGrowth, createGrowthCap, type GrowthWindow } from './growth';
 import { leafProgress, leafStart, normalizeTime, progress, type StudioMode } from './timeline';
+import { createTextileMaps } from './textile';
 
 export interface ArtTree {
   group: THREE.Group;
@@ -53,9 +54,10 @@ export function createTree(): ArtTree {
   const discUpdates: ((time: number) => void)[] = [];
   const capUpdates: ((time: number) => void)[] = [];
   const barkGrain = makeGrain(SEED + 1, 'bark'), clothGrain = makeGrain(SEED + 2, 'cloth');
-  const capMaterial = new THREE.MeshStandardMaterial({ color: '#987153', roughness: 0.98, side: THREE.DoubleSide, bumpMap: barkGrain, bumpScale: 0.025 });
+  const fiberMaps = createTextileMaps(SEED + 10, 'fiber'), leafMaps = createTextileMaps(SEED + 11, 'leaf');
+  const capMaterial = new THREE.MeshStandardMaterial({ color: '#675044', roughness: 0.98, side: THREE.DoubleSide, bumpMap: barkGrain, bumpScale: 0.05 });
   const barkMaterial = growth.material(new THREE.MeshStandardMaterial({ color: '#ffffff', vertexColors: true, roughness: 0.98, bumpMap: barkGrain, bumpScale: 0.075 }));
-  const fiberMaterials = PALETTE.fibers.map(() => growth.material(new THREE.MeshStandardMaterial({ color: '#ffffff', vertexColors: true, roughness: 0.95, bumpMap: clothGrain, bumpScale: 0.025 })));
+  const fiberMaterials = PALETTE.fibers.map(() => growth.material(new THREE.MeshPhysicalMaterial({ color: '#ffffff', vertexColors: true, map: fiberMaps.color, roughness: 0.96, roughnessMap: fiberMaps.roughness, bumpMap: fiberMaps.bump, bumpScale: 0.009, sheen: 0.45, sheenColor: '#ded4c4', sheenRoughness: 0.82 })));
   const fiberGeometries: THREE.BufferGeometry[][] = PALETTE.fibers.map(() => []);
   const textileColors = PALETTE.fibers.map(color => new THREE.Color(color));
   const coloredFiber = (geometry: THREE.BufferGeometry, index: number, phase: number, timing: GrowthWindow) => {
@@ -122,8 +124,9 @@ export function createTree(): ArtTree {
       // 色带以成组变化为主，避免整根树干均匀糖果条纹。
       const band = Math.floor(((i / count + 0.1) * 2.25 + Math.sin(initial * 3) * 0.045) % 1 * PALETTE.fibers.length);
       const index = Math.abs(band + (random() < 0.22 ? 1 : 0)) % PALETTE.fibers.length;
-      const stagger = (i * 7 % 19) / 19 * 0.18;
-      coloredFiber(tubeFromPoints(points, thickness, lengthSegments, 5), index, initial, { ...timing, start: timing.start + stagger, end: timing.end + stagger });
+      const stagger = (i * 7 % 19) / 19 * 0.38;
+      // 起笔更有先后，终点仍在原时间窗口内，不推迟枝叶展开。
+      coloredFiber(tubeFromPoints(points, thickness, lengthSegments, 7), index, initial, { ...timing, start: timing.start + stagger, end: timing.end + stagger * 0.38 });
       fiberCount++;
     }
   }
@@ -181,9 +184,9 @@ export function createTree(): ArtTree {
   });
 
   const leaves: THREE.Group[] = [];
-  const discGeometry = new THREE.CylinderGeometry(1, 0.92, 0.3, 7);
+  const discGeometry = new THREE.CylinderGeometry(1, 0.92, 0.22, 10);
   discGeometry.rotateX(Math.PI / 2);
-  const discMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.78, metalness: 0.02, bumpMap: clothGrain, bumpScale: 0.012 });
+  const discMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.58, metalness: 0.16, bumpMap: clothGrain, bumpScale: 0.006 });
   const matrixDummy = new THREE.Object3D();
   const discColors = PALETTE.discs.map(c => new THREE.Color(c));
 
@@ -207,7 +210,7 @@ export function createTree(): ArtTree {
       baseColor.clone().multiplyScalar(shade).toArray(colors, i * 3);
     }
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    const material = new THREE.MeshStandardMaterial({ color: '#ffffff', vertexColors: true, roughness: 0.95, bumpMap: clothGrain, bumpScale: 0.032 });
+    const material = new THREE.MeshPhysicalMaterial({ color: '#ffffff', vertexColors: true, map: leafMaps.color, roughness: 0.96, roughnessMap: leafMaps.roughness, bumpMap: leafMaps.bump, bumpScale: 0.022, sheen: 0.32, sheenColor: '#e4d5b9', sheenRoughness: 0.9 });
     const body = new THREE.Mesh(geometry, material);
     body.name = '叶片实体'; body.castShadow = body.receiveShadow = true;
     leaf.add(body);

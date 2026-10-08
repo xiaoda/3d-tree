@@ -65,12 +65,17 @@ describe('15 秒绝对时间轴', () => {
       expect([...pose.position, ...pose.target, pose.fov].every(Number.isFinite)).toBe(true);
     }
   });
-  it('竖屏开场不变，成树保持近景体量且末尾不再退远', () => {
+  it('艺术馆版恢复第一版完整树冠机位而不是近景裁切版', () => {
+    expect(cameraAt(10, 'portrait')).toEqual({ position: [13, 11.2, 22.5], target: [0, 5.2, 0], fov: 72 });
+    expect(cameraAt(13, 'portrait')).toEqual({ position: [8.8, 10.6, 23.8], target: [0, 5.2, 0], fov: 72 });
+    expect(cameraAt(15, 'portrait')).toEqual({ position: [10.7, 10.5, 25.3], target: [0, 5.2, 0], fov: 72 });
+  });
+  it('保留可选近景参数，其开场不变，成树保持近景且末尾不退远', () => {
     expect(cameraAt(0, 'portrait')).toEqual({ position: [3.6, 2.2, 6.4], target: [0, 0.95, 0], fov: 48 });
     expect(cameraAt(4, 'portrait')).toEqual({ position: [4.2, 4.8, 10.5], target: [0, 2.7, 0], fov: 48 });
     // 用树干底部至内冠顶端的中央参考线约束屏幕体量；两侧树冠允许出画。
     for (let frame = 240; frame <= 360; frame++) {
-      const pose = cameraAt(frame / FPS, 'portrait');
+      const pose = cameraAt(frame / FPS, 'portrait', 'close');
       const camera = new PerspectiveCamera(pose.fov, 9 / 16, 0.1, 100);
       camera.position.set(...pose.position); camera.lookAt(new Vector3(...pose.target)); camera.updateMatrixWorld();
       const bottom = new Vector3(0, 0.2, 0).project(camera);
@@ -82,12 +87,12 @@ describe('15 秒绝对时间轴', () => {
       expect(top.y).toBeLessThan(0.9);
     }
     const viewSpan = (time: number) => {
-      const pose = cameraAt(time, 'portrait');
+      const pose = cameraAt(time, 'portrait', 'close');
       return 2 * Math.hypot(...pose.position.map((v, i) => v - pose.target[i])) * Math.tan(pose.fov * Math.PI / 360);
     };
     expect(viewSpan(14.4)).toBeLessThanOrEqual(viewSpan(13));
-    for (const time of [4, 10, 13, 14.4]) {
-      const a = cameraAt(time - 0.0001, 'portrait'), b = cameraAt(time + 0.0001, 'portrait');
+    for (const framing of ['complete', 'close'] as const) for (const time of [4, 10, 13, 14.4]) {
+      const a = cameraAt(time - 0.0001, 'portrait', framing), b = cameraAt(time + 0.0001, 'portrait', framing);
       expect(Math.hypot(...a.position.map((v, i) => v - b.position[i]))).toBeLessThan(0.01);
       expect(Math.abs(a.fov - b.fov)).toBeLessThan(0.01);
     }
