@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f4f1eb" />
+    <meta name="description" content="织生 — 根据实拍艺术装置创作的 Three.js 三维树，横屏造型与材质研究。" />
+    <link rel="icon" type="image/svg+xml" href="/mark.svg" />
+    <title>织生 · Woven Life — 三维造型研究</title>
+  </head>
+  <body>
+    <div class="studio">
+      <header class="masthead">
+        <a class="brand" href="/" aria-label="织生，返回初始画面">
+          <svg viewBox="0 0 36 42" aria-hidden="true"><path d="M18 39V10M18 30C4 29 2 16 5 5c10 3 15 10 13 25Zm0-8C30 21 34 12 31 2c-9 2-14 8-13 20Z"/><path d="m18 25-8-11m8 2 8-8"/></svg>
+          <span class="brand-title">织生<span class="brand-en">WOVEN LIFE</span></span>
+        </a>
+        <div class="masthead-note">从一张照片，到一棵有呼吸的树。<span>一项关于纤维、色彩与生命的三维研究</span></div>
+        <div class="edition"><span class="status-dot"></span>空间研究 <span class="edition-number">/ 02</span></div>
+      </header>
+
+      <main>
+        <div class="section-heading"><span>大冠幅 · 全向造型与纤维色层</span><span class="technical">THREE.JS <i></i> 16 : 9</span></div>
+        <section class="viewport" aria-label="艺术树三维预览">
+          <canvas id="scene" aria-label="三维艺术树，可拖动旋转、滚轮缩放" tabindex="0"></canvas>
+          <div class="viewport-note"><span class="small-label">MATERIAL STUDY</span><p>线成木，片成叶。</p></div>
+          <div class="viewport-actions">
+            <button id="reference-button" class="glass-button" aria-haspopup="dialog" title="查看原始参考照片"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="3" width="14" height="14" rx="1"/><path d="m3 13 4-4 4 5 2-3 4 3"/><circle cx="13" cy="7" r="1"/></svg><span>参考照片</span></button>
+            <button id="clean-button" class="glass-button icon-only" aria-label="切换纯净预览，按 Escape 退出" title="纯净预览 · Esc 退出"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 7V3h4m6 0h4v4M3 13v4h4m6 0h4v-4"/></svg></button>
+          </div>
+          <div class="viewport-bottom"><span><span class="tiny-dot"></span><span id="view-label">完整树形</span></span><span>拖动旋转 <b>·</b> 滚轮缩放</span></div>
+          <div id="loading" class="loading"><span class="loading-mark"></span><p>正在编织这棵树…</p></div>
+          <div id="error" class="error-panel" role="alert" hidden><h2>暂时无法呈现三维画面</h2><p id="error-message"></p><button id="reload-button">重新加载</button></div>
+          <button id="exit-clean" hidden>退出纯净预览 <span>Esc</span></button>
+        </section>
+
+        <div class="toolbar">
+          <div class="camera-controls" role="group" aria-label="选择镜头">
+            <span class="control-label">镜头</span>
+            <button class="camera-button active" data-view="portrait" aria-pressed="true"><span>01</span>完整树形</button>
+            <button class="camera-button" data-view="side" aria-pressed="false"><span>02</span>右侧</button>
+            <button class="camera-button" data-view="back" aria-pressed="false"><span>03</span>背面</button>
+            <button class="camera-button" data-view="left" aria-pressed="false"><span>04</span>左侧</button>
+            <button class="camera-button" data-view="reference" aria-pressed="false"><span>05</span>仰视参考</button>
+            <button class="camera-button" data-view="detail" aria-pressed="false"><span>06</span>纤维细节</button>
+          </div>
+          <div class="output-controls">
+            <button id="play-button" class="play-button" aria-pressed="false"><span id="play-icon">▷</span><span id="play-label">呼吸预览</span></button>
+            <span class="toolbar-divider"></span>
+            <button id="export-button" class="export-button"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2v10m-4-4 4 4 4-4M3 13v4h14v-4"/></svg><span>导出静帧</span></button>
+          </div>
+        </div>
+      </main>
+
+      <footer><p>保留手作的温度，让材料慢慢有了生命。</p><span id="status" role="status" aria-live="polite">本地渲染 · 尚未制作完整生长动画</span></footer>
+    </div>
+
+    <dialog id="reference-dialog" aria-labelledby="reference-title">
+      <div class="dialog-header"><div><span class="small-label">THE ORIGIN</span><h2 id="reference-title">一切从这里开始</h2></div><button id="close-reference" aria-label="关闭参考照片">×</button></div>
+      <img src="/reference.jpg" alt="用户拍摄的展厅艺术树：彩色纤维树干、巨型叶片和金黄色圆片装饰" />
+      <p>原始实拍参考。背面与遮挡结构为同风格设计补全。</p>
+    </dialog>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
