@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node scripts/dev-server.mjs",
     "build": "tsc --noEmit && vite build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "export:video": "powershell -NoProfile -File scripts/start-video-export.ps1"
   },
   "dependencies": {
     "three": "^0.186.1"

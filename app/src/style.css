@@ -113,3 +113,56 @@ body.clean .viewport { width: min(100vw, calc(100dvh * 16 / 9)); min-height: 0; 
   footer>span { text-align: left; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* 动画工作台沿用纸色展陈语言，分镜刻度如同一条手工编织谱。 */
+.film-panel { margin-top: 18px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.film-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; }
+.mode-switch { display: flex; gap: 3px; flex-shrink: 0; }
+.mode-switch button { border: 1px solid transparent; background: none; padding: 9px 15px; font-size: 11px; }
+.mode-switch button.active { background: #eae3d7; border-color: #d4c7b7; color: #71563d; }
+.mode-switch span { margin-left: 9px; color: #a38c6e; font-family: 'Palatino Linotype', serif; }
+.film-caption { color: var(--muted); font-size: 10px; letter-spacing: .5px; text-align: right; }
+.chapters { display: grid; grid-template-columns: 4fr 6fr 3fr 2fr; margin: 3px 0 9px; }
+.chapters button { text-align: left; background: none; border: 0; border-left: 1px solid var(--line); padding: 9px 14px 11px; color: var(--muted); }
+.chapters button.active { background: #e8dfd0; color: #71563d; border-left-color: var(--accent); }
+.chapters button>span { display: block; font-size: 9px; letter-spacing: 1px; margin-bottom: 8px; font-variant-numeric: tabular-nums; }
+.chapters b { font: 18px 'STZhongsong', 'SimSun', serif; letter-spacing: 2px; }
+.chapters small { font-size: 10px; margin-left: 12px; }
+.scrub-row { display: flex; align-items: center; gap: 20px; }
+#timeline { --progress: 0%; appearance: none; height: 24px; width: 100%; min-width: 0; margin: 0; cursor: pointer; background: transparent; }
+#timeline::-webkit-slider-runnable-track { height: 3px; background: linear-gradient(to right, var(--accent) var(--progress), #d6caba var(--progress)); }
+#timeline::-webkit-slider-thumb { appearance: none; width: 12px; height: 12px; margin-top: -4.5px; background: #806348; border: 2px solid var(--paper); outline: 1px solid #806348; border-radius: 50%; }
+#timeline::-moz-range-track { height: 3px; background: #d6caba; }
+#timeline::-moz-range-progress { height: 3px; background: var(--accent); }
+#timeline::-moz-range-thumb { width: 10px; height: 10px; background: #806348; border: 2px solid var(--paper); border-radius: 50%; }
+#timeline:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+#time-readout { flex-shrink: 0; min-width: 104px; text-align: right; font-size: 11px; color: #806a52; font-variant-numeric: tabular-nums; }
+.transport-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0 12px; gap: 14px; }
+.frame-controls { display: flex; flex-wrap: wrap; gap: 8px; }
+.transport-row button { padding: 7px 9px; background: none; border: 1px solid transparent; font-size: 10px; color: #806e59; }
+.transport-row button:hover { background: #eae3d7; }
+#director-button { border-color: #d4c7b7; white-space: nowrap; }
+#format-button { border-color: #d4c7b7; white-space: nowrap; }
+#director-button[aria-pressed="true"] { background: #eae3d7; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+body.clean .film-panel { display: none; }
+@media (min-width: 1000px) {
+  body.film-mode .viewport { width: min(100%, calc((100dvh - 480px) * 16 / 9)); max-height: none; min-width: 560px; }
+  body.clean.film-mode .viewport { width: min(100vw, calc(100dvh * 16 / 9)); min-width: 0; }
+}
+body.portrait-film .viewport { aspect-ratio: 9/16; width: min(100%, 340px); min-width: 0; min-height: 0; max-height: none; }
+body.portrait-film.clean .viewport { width: min(100vw, calc(100dvh * 9 / 16)); }
+@media (max-width: 700px) {
+  .film-heading { flex-wrap: wrap; gap: 10px; }
+  .film-caption { font-size: 9px; text-align: left; }
+  .chapters { grid-template-columns: repeat(4, 1fr); }
+  .chapters button { padding: 9px 7px; }
+  .chapters button>span { font-size: 7px; letter-spacing: 0; }
+  .chapters b { font-size: 16px; }
+  .chapters small { display: block; margin: 6px 0 0; font-size: 8px; }
+  .scrub-row { gap: 12px; }
+  #time-readout { min-width: 90px; font-size: 10px; }
+  .transport-row { flex-wrap: wrap; gap: 6px; }
+  .frame-controls { gap: 2px; }
+  .transport-row button { padding: 8px 6px; }
+}

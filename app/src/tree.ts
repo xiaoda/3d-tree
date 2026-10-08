@@ -3,11 +3,13 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { LEAVES, PALETTE, SEED, type Triple } from './config';
 import { breathingPose, leafSurface, leafWidth, seededRandom } from './procedural';
 import { createSurface, surfaceGeometry, surfacePoint, tubeFromPoints, leafGeometry, type TubeSurface } from './geometry';
+import { animateDiscs, attachBirthTimes, createGrowth, createGrowthCap, type GrowthWindow } from './growth';
+import { leafProgress, leafStart, normalizeTime, progress, type StudioMode } from './timeline';
 
 export interface ArtTree {
   group: THREE.Group;
   leaves: THREE.Group[];
-  update: (time: number) => void;
+  update: (time: number, mode?: StudioMode) => void;
   stats: { leaves: number; discs: number; fibers: number; crownSpan: number[] };
 }
 
@@ -41,17 +43,23 @@ function addMerged(group: THREE.Group, geometries: THREE.BufferGeometry[], mater
   const mesh = new THREE.Mesh(merged, material);
   mesh.name = name; mesh.castShadow = true; mesh.receiveShadow = true;
   group.add(mesh);
+  return mesh;
 }
 
 export function createTree(): ArtTree {
   const group = new THREE.Group(); group.name = '织生 · 艺术树';
   const random = seededRandom(SEED);
+  const growth = createGrowth();
+  const discUpdates: ((time: number) => void)[] = [];
+  const capUpdates: ((time: number) => void)[] = [];
   const barkGrain = makeGrain(SEED + 1, 'bark'), clothGrain = makeGrain(SEED + 2, 'cloth');
-  const barkMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff', vertexColors: true, roughness: 0.98, bumpMap: barkGrain, bumpScale: 0.075 });
-  const fiberMaterials = PALETTE.fibers.map(() => new THREE.MeshStandardMaterial({ color: '#ffffff', vertexColors: true, roughness: 0.95, bumpMap: clothGrain, bumpScale: 0.025 }));
+  const capMaterial = new THREE.MeshStandardMaterial({ color: '#987153', roughness: 0.98, side: THREE.DoubleSide, bumpMap: barkGrain, bumpScale: 0.025 });
+  const barkMaterial = growth.material(new THREE.MeshStandardMaterial({ color: '#ffffff', vertexColors: true, roughness: 0.98, bumpMap: barkGrain, bumpScale: 0.075 }));
+  const fiberMaterials = PALETTE.fibers.map(() => growth.material(new THREE.MeshStandardMaterial({ color: '#ffffff', vertexColors: true, roughness: 0.95, bumpMap: clothGrain, bumpScale: 0.025 })));
   const fiberGeometries: THREE.BufferGeometry[][] = PALETTE.fibers.map(() => []);
   const textileColors = PALETTE.fibers.map(color => new THREE.Color(color));
-  const coloredFiber = (geometry: THREE.BufferGeometry, index: number, phase: number) => {
+  const coloredFiber = (geometry: THREE.BufferGeometry, index: number, phase: number, timing: GrowthWindow) => {
+    attachBirthTimes(geometry, timing, 'x');
     const uv = geometry.getAttribute('uv'), colors = new Float32Array(uv.count * 3);
     const base = textileColors[index], next = textileColors[(index + 1) % textileColors.length];
     for (let i = 0; i < uv.count; i++) {
@@ -71,8 +79,12 @@ export function createTree(): ArtTree {
     [1.38, 1.14, 0.89, 0.81, 0.67, 0.31], 110, 0.075,
   );
 
-  function addWood(surface: TubeSurface, name: string) {
+  function addWood(surface: TubeSurface, name: string, timing: GrowthWindow) {
     const geometry = surfaceGeometry(surface), uv = geometry.getAttribute('uv');
+    const woodTiming = { ...timing, start: timing.start + 0.22, end: timing.end + 0.22 };
+    attachBirthTimes(geometry, woodTiming, 'y');
+    const cap = createGrowthCap(surface, woodTiming, capMaterial);
+    group.add(cap.mesh); capUpdates.push(cap.update);
     const colors = new Float32Array(uv.count * 3), darkWood = new THREE.Color('#584037');
     for (let i = 0; i < uv.count; i++) {
       const u = uv.getX(i), v = uv.getY(i);
@@ -83,6 +95,7 @@ export function createTree(): ArtTree {
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     const mesh = new THREE.Mesh(geometry, barkMaterial);
     mesh.name = name; mesh.castShadow = mesh.receiveShadow = true;
+    growth.bind(mesh);
     group.add(mesh);
   }
 
@@ -91,7 +104,7 @@ export function createTree(): ArtTree {
     { t: 0.47, angle: 1.25, height: 0.095, width: 0.38 }, { t: 0.72, angle: 0.15, height: 0.065, width: 0.30 },
     { t: 0.26, angle: 5.2, height: 0.073, width: 0.35 }, { t: 0.72, angle: 4.8, height: 0.06, width: 0.27 },
   ];
-  function addFibers(surface: TubeSurface, count: number, size: number, twist: number, lengthSegments = 72, withKnots = false) {
+  function addFibers(surface: TubeSurface, timing: GrowthWindow, count: number, size: number, twist: number, lengthSegments = 72, withKnots = false) {
     for (let i = 0; i < count; i++) {
       const initial = (i + random() * 0.24) / count * Math.PI * 2;
       const thickness = size * (0.58 + random() * 0.64), points: THREE.Vector3[] = [];
@@ -109,13 +122,15 @@ export function createTree(): ArtTree {
       // 色带以成组变化为主，避免整根树干均匀糖果条纹。
       const band = Math.floor(((i / count + 0.1) * 2.25 + Math.sin(initial * 3) * 0.045) % 1 * PALETTE.fibers.length);
       const index = Math.abs(band + (random() < 0.22 ? 1 : 0)) % PALETTE.fibers.length;
-      coloredFiber(tubeFromPoints(points, thickness, lengthSegments, 5), index, initial);
+      const stagger = (i * 7 % 19) / 19 * 0.18;
+      coloredFiber(tubeFromPoints(points, thickness, lengthSegments, 5), index, initial, { ...timing, start: timing.start + stagger, end: timing.end + stagger });
       fiberCount++;
     }
   }
-  addWood(trunk, '连续树干');
-  addFibers(trunk, 288, 0.026, 1.12, 104, true);
-  addFibers(trunk, 28, 0.043, 1.12, 104, true);
+  const trunkTiming = { start: 0.65, end: 5.4 };
+  addWood(trunk, '连续树干', trunkTiming);
+  addFibers(trunk, trunkTiming, 288, 0.026, 1.12, 104, true);
+  addFibers(trunk, trunkTiming, 28, 0.043, 1.12, 104, true);
   for (const knot of knots) {
     for (let ring = 0; ring < 12; ring++) {
       const scale = (ring + 1) / 12, points: THREE.Vector3[] = [];
@@ -125,7 +140,8 @@ export function createTree(): ArtTree {
         const angle = knot.angle + Math.cos(a) * knot.width * scale * (0.94 + 0.06 * Math.sin(a * 3));
         points.push(surfacePoint(trunk, t, angle, 0.017 + scale * 0.003));
       }
-      coloredFiber(tubeFromPoints(points, 0.019, 64, 5), [2, 5, 12, 6, 0, 9][ring % 6], knot.angle);
+      const start = 0.95 + knot.t * 4.75 + ring * 0.016;
+      coloredFiber(tubeFromPoints(points, 0.019, 64, 5), [2, 5, 12, 6, 0, 9][ring % 6], knot.angle, { start, end: start + 0.65 });
       fiberCount++;
     }
   }
@@ -141,7 +157,8 @@ export function createTree(): ArtTree {
       [Math.cos(angle + 0.20) * end, 0.16, Math.sin(angle + 0.20) * end * 0.95],
     ];
     const root = createSurface(points, [0.48, 0.4, 0.20, 0.035], 44, 0.08);
-    addWood(root, `根脊 ${i + 1}`); addFibers(root, 20, 0.018, 0.42, 42);
+    const timing = { start: 0.05 + i * 0.025, end: 2.3 + i * 0.025, reverse: true };
+    addWood(root, `根脊 ${i + 1}`, timing); addFibers(root, timing, 20, 0.018, 0.42, 42);
   }
 
   // 全周主枝及逐叶承托枝；从树干内部起笔，隐藏关节断口。
@@ -149,14 +166,19 @@ export function createTree(): ArtTree {
     const a = i / 10 * Math.PI * 2 + 0.1;
     const points: Triple[] = [[0.08, 3.65 + (i % 3) * 0.29, 0], [Math.cos(a) * 0.95, 4.85, Math.sin(a) * 0.95], [Math.cos(a + 0.13) * 2.4, 6.0 + (i % 3) * 0.23, Math.sin(a + 0.13) * 2.4], [Math.cos(a + 0.18) * 4.6, 7.0 + (i % 2) * 0.5, Math.sin(a + 0.18) * 4.6]];
     const surface = createSurface(points, [0.5, 0.36, 0.22, 0.06], 56, 0.065);
-    addWood(surface, `主枝 ${i + 1}`); addFibers(surface, 30, 0.019, 0.65, 52);
+    const timing = { start: 4.0 + (i % 3) * 0.12, end: 6.5 + (i % 3) * 0.12 };
+    addWood(surface, `主枝 ${i + 1}`, timing); addFibers(surface, timing, 30, 0.019, 0.65, 52);
   }
   LEAVES.forEach((spec, i) => {
     const [x, y, z] = spec.base;
     const surface = createSurface([[0.13, 4.8, -0.05], [x * 0.55, y - 0.6, z * 0.55], spec.base], [0.23, 0.13, 0.046], 28, 0.035);
-    addWood(surface, `叶片承托 ${i + 1}`); addFibers(surface, 8, 0.015, 0.25, 26);
+    const timing = { start: 4.7 + (i % 6) * 0.05, end: leafStart(i) - 0.24 };
+    addWood(surface, `叶片承托 ${i + 1}`, timing); addFibers(surface, timing, 8, 0.015, 0.25, 26);
   });
-  fiberGeometries.forEach((geometries, i) => addMerged(group, geometries, fiberMaterials[i], `彩色纤维 ${i + 1}`));
+  fiberGeometries.forEach((geometries, i) => {
+    const mesh = addMerged(group, geometries, fiberMaterials[i], `彩色纤维 ${i + 1}`);
+    if (mesh) growth.bind(mesh);
+  });
 
   const leaves: THREE.Group[] = [];
   const discGeometry = new THREE.CylinderGeometry(1, 0.92, 0.3, 7);
@@ -254,6 +276,7 @@ export function createTree(): ArtTree {
         discs.setColorAt(i, color);
       });
       discs.computeBoundingBox(); discs.computeBoundingSphere();
+      discUpdates.push(animateDiscs(discs, index, samples.map(sample => sample.v), side));
       leaf.add(discs); discCount += samples.length;
       }
     }
@@ -285,10 +308,19 @@ export function createTree(): ArtTree {
   return {
     group, leaves,
     stats: { leaves: leaves.length, discs: discCount, fibers: fiberCount, crownSpan: [crownBounds.max.x - crownBounds.min.x, crownBounds.max.z - crownBounds.min.z] },
-    update(time) {
+    update(time, mode = 'study') {
+      if (!Number.isFinite(time)) throw new Error('时间必须是有限数值');
+      const film = mode === 'film', t = film ? normalizeTime(time) : time;
+      growth.time.value = film ? t : 100;
+      capUpdates.forEach(update => update(film ? t : 100));
+      discUpdates.forEach(update => update(film ? t : 100));
       leaves.forEach((leaf, i) => {
-        const pose = breathingPose(time, i);
-        euler.set(pose.x, 0, pose.z); offset.setFromEuler(euler);
+        const unfold = film ? leafProgress(t, i) : 1;
+        leaf.visible = unfold > 0;
+        leaf.scale.set(0.035 + 0.965 * unfold, 0.12 + 0.88 * unfold, 0.3 + 0.7 * unfold);
+        const pose = breathingPose(t, i), breath = film ? progress(t, 8.5, 11) : 1;
+        euler.set(pose.x * breath + (1 - unfold) * -0.72, (1 - unfold) * (i % 2 ? 0.24 : -0.24), pose.z * breath);
+        offset.setFromEuler(euler);
         leaf.quaternion.copy(leaf.userData.restQuaternion as THREE.Quaternion).multiply(offset);
       });
     },

@@ -50,4 +50,33 @@ describe('完整艺术树', () => {
     expect(trunk.geometry.getAttribute('color')).toBeDefined();
     expect(tree.group.children.filter(child => child.name.startsWith('叠层年轮'))).toHaveLength(15);
   });
+  it('生长支持正反跳转，完整造型可以恢复', () => {
+    const sample = () => tree.leaves.map(leaf => ({ visible: leaf.visible, scale: leaf.scale.toArray(), rotation: leaf.quaternion.toArray() }));
+    tree.update(20, 'film');
+    expect(tree.leaves.every(leaf => leaf.visible && leaf.scale.x === 1 && leaf.scale.y === 1)).toBe(true);
+    tree.update(0, 'film');
+    expect(tree.leaves.every(leaf => !leaf.visible)).toBe(true);
+    tree.update(7.5, 'film'); const before = sample();
+    tree.update(20, 'film'); tree.update(0, 'film'); tree.update(7.5, 'film');
+    expect(sample()).toEqual(before);
+    tree.update(0, 'study');
+    expect(tree.leaves.every(leaf => leaf.visible && leaf.scale.x === 1)).toBe(true);
+  });
+  it('生长不改写静态圆片矩阵，逆序渲染一致且未生长的树有匹配阴影', () => {
+    const discs: InstancedMesh[] = [];
+    tree.group.traverse(object => { if (object instanceof InstancedMesh) discs.push(object); });
+    tree.update(0, 'study');
+    const rest = discs.map(mesh => Array.from(mesh.instanceMatrix.array));
+    tree.update(12, 'film'); const middle = discs.map(mesh => Array.from(mesh.instanceMatrix.array));
+    expect(middle).not.toEqual(rest);
+    tree.update(0, 'film'); tree.update(19, 'film'); tree.update(12, 'film');
+    expect(discs.map(mesh => Array.from(mesh.instanceMatrix.array))).toEqual(middle);
+    tree.update(20, 'film');
+    expect(discs.map(mesh => Array.from(mesh.instanceMatrix.array))).toEqual(rest);
+    const trunk = tree.group.getObjectByName('连续树干') as Mesh;
+    expect(trunk.geometry.hasAttribute('birthTime')).toBe(true);
+    expect(trunk.customDepthMaterial).toBeDefined();
+    expect(trunk.customDistanceMaterial).toBeDefined();
+    tree.update(0, 'study');
+  });
 });

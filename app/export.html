@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="/mark.svg" type="image/svg+xml" />
+  <title>织生 · 手机竖屏视频</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#f4f1eb;color:#665443;font:14px 'Microsoft YaHei',sans-serif}main{max-width:1000px;margin:auto;padding:36px 24px}header{border-bottom:1px solid #d9cfc1;padding-bottom:22px;margin-bottom:24px}h1{font:32px 'SimSun',serif;letter-spacing:8px;margin:0 0 12px}p{line-height:1.9;color:#8a7967}.work{display:flex;gap:32px;align-items:flex-start}#render-frame{width:320px;max-width:100%;aspect-ratio:9/16;background:#e7e1d5;flex-shrink:0}canvas{width:100%;height:100%;display:block}aside{flex:1;padding-top:20px}button,a.download{display:inline-block;border:1px solid #8b6a4d;background:#8b6a4d;color:#fff8ef;padding:12px 20px;font:inherit;text-decoration:none;cursor:pointer}button:disabled{opacity:.5;cursor:default}button:focus-visible,a:focus-visible{outline:2px solid #60482f;outline-offset:3px}progress{display:block;width:100%;height:8px;accent-color:#8b6a4d;margin:24px 0 10px}.meta{font-size:12px;line-height:2;letter-spacing:1px}video{display:block;width:320px;max-width:100%;max-height:72vh;background:#e7e1d5;object-fit:contain;margin:18px 0}[hidden]{display:none!important}#message{white-space:pre-line}small{color:#9a8976} @media(max-width:600px){main{padding:24px 18px}.work{flex-direction:column;align-items:center}aside{width:100%;padding:0}#render-frame{width:270px}h1{font-size:28px}video{margin-left:auto;margin-right:auto}}
+  </style>
+</head>
+<body><main>
+  <header><h1>织生</h1><small>WOVEN LIFE / MOBILE FILM</small></header>
+  <div class="work">
+    <div id="render-frame"><canvas id="export-canvas" aria-label="手机竖屏渲染预览"></canvas></div>
+    <aside>
+      <div class="meta">9 : 16 · 1080 × 1920<br />15 秒 · 24 fps · 无声</div>
+      <p>前半段舒展，后半段更利落。<br />每一帧单独渲染，不因电脑快慢跳帧。</p>
+      <button id="start-export" disabled>生成手机 MP4</button>
+      <progress id="export-progress" value="0" max="360" aria-label="已完成帧数"></progress>
+      <p id="message" role="status">正在准备三维场景…</p>
+      <section id="result" hidden>
+        <video id="result-video" controls playsinline preload="metadata" aria-label="织生竖屏成片"></video>
+        <a id="download-video" class="download" download>下载手机视频</a>
+        <p><small>下载 MP4 后可传到手机播放。此本地地址本身不是手机访问链接。</small></p>
+      </section>
+    </aside>
+  </div>
+  <script type="module" src="/src/export-video.ts"></script>
+</main></body></html>

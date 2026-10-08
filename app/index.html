@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f4f1eb" />
-    <meta name="description" content="织生 — 根据实拍艺术装置创作的 Three.js 三维树，横屏造型与材质研究。" />
+    <meta name="description" content="织生 — 根据实拍艺术装置创作的三维树，15 秒纤维生长与枝叶舒展动画研究。" />
     <link rel="icon" type="image/svg+xml" href="/mark.svg" />
-    <title>织生 · Woven Life — 三维造型研究</title>
+    <title>织生 · Woven Life — 生长短片研究</title>
   </head>
   <body>
     <div class="studio">
@@ -16,22 +16,53 @@
           <span class="brand-title">织生<span class="brand-en">WOVEN LIFE</span></span>
         </a>
         <div class="masthead-note">从一张照片，到一棵有呼吸的树。<span>一项关于纤维、色彩与生命的三维研究</span></div>
-        <div class="edition"><span class="status-dot"></span>空间研究 <span class="edition-number">/ 02</span></div>
+        <div class="edition"><span class="status-dot"></span>生长研究 <span class="edition-number">/ 03</span></div>
       </header>
 
       <main>
-        <div class="section-heading"><span>大冠幅 · 全向造型与纤维色层</span><span class="technical">THREE.JS <i></i> 16 : 9</span></div>
+        <div class="section-heading"><span>从纤维到树冠，让生命徐徐展开</span><span class="technical">15 SEC <i></i> <span id="format-label">16 : 9</span></span></div>
         <section class="viewport" aria-label="艺术树三维预览">
           <canvas id="scene" aria-label="三维艺术树，可拖动旋转、滚轮缩放" tabindex="0"></canvas>
-          <div class="viewport-note"><span class="small-label">MATERIAL STUDY</span><p>线成木，片成叶。</p></div>
+          <div class="viewport-note"><span class="small-label" id="study-label">MATERIAL STUDY</span><p>线成木，片成叶。</p></div>
           <div class="viewport-actions">
             <button id="reference-button" class="glass-button" aria-haspopup="dialog" title="查看原始参考照片"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="3" width="14" height="14" rx="1"/><path d="m3 13 4-4 4 5 2-3 4 3"/><circle cx="13" cy="7" r="1"/></svg><span>参考照片</span></button>
             <button id="clean-button" class="glass-button icon-only" aria-label="切换纯净预览，按 Escape 退出" title="纯净预览 · Esc 退出"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 7V3h4m6 0h4v4M3 13v4h4m6 0h4v-4"/></svg></button>
           </div>
-          <div class="viewport-bottom"><span><span class="tiny-dot"></span><span id="view-label">完整树形</span></span><span>拖动旋转 <b>·</b> 滚轮缩放</span></div>
+          <div class="viewport-bottom"><span><span class="tiny-dot"></span><span id="view-label">完整树形</span></span><span id="camera-hint">拖动旋转 · 滚轮缩放</span></div>
           <div id="loading" class="loading"><span class="loading-mark"></span><p>正在编织这棵树…</p></div>
           <div id="error" class="error-panel" role="alert" hidden><h2>暂时无法呈现三维画面</h2><p id="error-message"></p><button id="reload-button">重新加载</button></div>
           <button id="exit-clean" hidden>退出纯净预览 <span>Esc</span></button>
+        </section>
+
+        <section class="film-panel" aria-label="生长动画时间轴">
+          <div class="film-heading">
+            <div class="mode-switch" role="group" aria-label="选择预览模式">
+              <button data-mode="study" aria-pressed="true" class="active">造型研究</button>
+              <button data-mode="film" aria-pressed="false">生长短片 <span>15″</span></button>
+            </div>
+            <span class="film-caption" id="film-caption">造型已定稿 · 点击「生长短片」开始</span>
+          </div>
+          <div id="timeline-controls" hidden>
+            <div class="chapters" role="group" aria-label="跳转分镜">
+              <button data-time="0"><span>01 / 00–04″</span><b>起笔</b><small>纤维生根</small></button>
+              <button data-time="4"><span>02 / 04–10″</span><b>舒展</b><small>枝叶成形</small></button>
+              <button data-time="10"><span>03 / 10–13″</span><b>拾光</b><small>金片聚合</small></button>
+              <button data-time="13"><span>04 / 13–15″</span><b>成树</b><small>呼吸停留</small></button>
+            </div>
+            <div class="scrub-row">
+              <label for="timeline" class="sr-only">动画时间，单位秒</label>
+              <input id="timeline" type="range" min="0" max="15" step="0.041666666666666664" value="0" />
+              <output id="time-readout" for="timeline" aria-live="off">00.00 / 15.00</output>
+            </div>
+            <div class="transport-row">
+              <div class="frame-controls" role="group" aria-label="逐帧定位">
+                <button id="restart-button">↺ 从头播放</button>
+                <button id="previous-frame" aria-label="上一帧，24 帧每秒">‹ 上一帧</button>
+                <button id="next-frame" aria-label="下一帧，24 帧每秒">下一帧 ›</button>
+              </div>
+              <button id="format-button" aria-pressed="false">画幅 · 横屏</button><button id="director-button" aria-pressed="true">导演镜头 · 开</button>
+            </div>
+          </div>
         </section>
 
         <div class="toolbar">
@@ -52,7 +83,7 @@
         </div>
       </main>
 
-      <footer><p>保留手作的温度，让材料慢慢有了生命。</p><span id="status" role="status" aria-live="polite">本地渲染 · 尚未制作完整生长动画</span></footer>
+      <footer><p>保留手作的温度，让材料慢慢有了生命。</p><span id="status" role="status" aria-live="polite">本地渲染 · 生长动画预览版</span></footer>
     </div>
 
     <dialog id="reference-dialog" aria-labelledby="reference-title">

@@ -11,5 +11,5 @@ export default defineConfig({
     open: false,
     fs: { strict: true, allow: [path('./app'), path('./node_modules')] },
   },
-  build: { outDir: path('./dist'), emptyOutDir: true },
+  build: { outDir: path('./dist'), emptyOutDir: true, rolldownOptions: { input: { studio: path('./app/index.html'), export: path('./app/export.html') } } },
 });
